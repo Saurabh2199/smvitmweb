@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:smvitm_web/config/color_palette.dart';
-import 'package:smvitm_web/providers/categories.dart';
-import 'package:smvitm_web/providers/faculties.dart';
 import 'package:smvitm_web/screens/add_feed_screen.dart';
 import 'package:smvitm_web/screens/login_screen.dart';
 import 'package:smvitm_web/screens/select_category_screen.dart';
 import 'package:smvitm_web/screens/splash_screen.dart';
-import 'package:smvitm_web/widgets/loading.dart';
+
+import 'screens/add_feed_screen.dart';
+import 'screens/select_category_screen.dart';
 
 void main() {
   runApp(
@@ -26,7 +25,7 @@ class MyApp extends StatelessWidget {
         accentColor: ColorPalette.accentColor,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: LoginScreen(),
+      home: SelectCategoryScreen(),
       routes: {
         LoginScreen.routeName: (context) => LoginScreen(),
         SplashScreen.routeName: (context) => SplashScreen(),
