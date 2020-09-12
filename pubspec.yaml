@@ -29,7 +29,9 @@ dependencies:
   flutter_spinkit: "^4.1.2"
   material_design_icons_flutter: ^4.0.5555
   file_picker_web: ^1.0.2+1
-
+  file_picker_cross: ^4.2.1
+  cloud_firestore: ^0.14.0+2
+  firebase_core: ^0.5.0
   file_picker: ^1.13.3
 
 

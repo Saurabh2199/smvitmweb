@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:html';
-
-import 'package:file_picker/file_picker.dart' as fp;
-import 'package:file_picker_web/file_picker_web.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:smvitm_web/widgets/loading.dart';
+import 'package:file_picker_cross/file_picker_cross.dart';
 
 class AddFeedScreen extends StatefulWidget {
   static const routeName = '/addfeed';
@@ -27,14 +27,66 @@ class _AddFeedScreenState extends State<AddFeedScreen> {
   TextEditingController _title = TextEditingController();
   TextEditingController _description = TextEditingController();
   List<File> _files = [];
-  List<String> _base64 = [];
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   List<Map<String, String>> _listOfMap = [];
+  List<Map<String, String>> _fp1 = [];
   bool isLoad = false;
+
+  List<FilePickerCross> fp;
+  FilePickerCross filePickerCross;
+
+  bool _initialized = false;
+  bool _error = false;
+
+  // Define an async function to initialize FlutterFire
+  void initializeFlutterFire() async {
+    try {
+      // Wait for Firebase to initialize and set `_initialized` state to true
+      await Firebase.initializeApp();
+      setState(() {
+        _initialized = true;
+      });
+    } catch (e) {
+      // Set `_error` state to true if Firebase initialization fails
+      setState(() {
+
+        _error = true;
+      });
+    }
+  }
+
+  CollectionReference notification = FirebaseFirestore.instance.collection('notification');
 
   @override
   void initState() {
     super.initState();
+  }
+
+  void _selectFilepdf() async {
+    //fp = await FilePickerCross.importMultipleFromStorage(type: FileTypeCross.custom,fileExtension: '.pdf');
+    filePickerCross = await FilePickerCross.importFromStorage(
+        type: FileTypeCross.custom, fileExtension: '.pdf');
+    print(filePickerCross.fileName);
+
+    setState(() {
+      _fp1.add({
+        'name': filePickerCross.fileName,
+        'base64': filePickerCross.toBase64()
+      });
+    });
+  }
+
+  void _selectFileimg() async {
+    filePickerCross =
+        await FilePickerCross.importFromStorage(type: FileTypeCross.image);
+    print(filePickerCross.fileName);
+
+    setState(() {
+      _fp1.add({
+        'name': filePickerCross.fileName,
+        'base64': filePickerCross.toBase64()
+      });
+    });
   }
 
   @override
@@ -57,16 +109,8 @@ class _AddFeedScreenState extends State<AddFeedScreen> {
         actions: [
           if (widget.type != 'Text')
             IconButton(
-              onPressed: () async {
-                _files = await FilePicker.getMultiFile(
-                      type: fp.FileType.custom,
-                      allowedExtensions: widget.type == 'Image'
-                          ? ['png', 'jpg', 'jpeg']
-                          : ['pdf', 'docs', 'ppt'],
-                    ) ??
-                    [];
-                setState(() {});
-              },
+              onPressed:
+                  (widget.type == 'Image') ? _selectFileimg : _selectFilepdf,
               icon: Icon(
                 MdiIcons.attachment,
                 color: Theme.of(context).primaryColor,
@@ -90,12 +134,12 @@ class _AddFeedScreenState extends State<AddFeedScreen> {
                     maxLines: 6,
                   ),
                   const SizedBox(height: 20.0),
-                  if (_files.length != 0)
+                  if (_fp1 != null)
                     Expanded(
                       child: ListView.builder(
-                        itemCount: _files.length,
+                        itemCount: _fp1.length,
                         itemBuilder: (context, index) {
-                          String fileName = _files[index].name.toString();
+                          String fileName = _fp1[index]['name'];
                           return ListTile(
                             title: Text(
                               '$fileName',
@@ -105,7 +149,7 @@ class _AddFeedScreenState extends State<AddFeedScreen> {
                             trailing: IconButton(
                               onPressed: () {
                                 setState(() {
-                                  _files.removeAt(index);
+                                  _fp1.removeAt(index);
                                 });
                               },
                               icon: Icon(MdiIcons.fileRemove),
@@ -116,7 +160,9 @@ class _AddFeedScreenState extends State<AddFeedScreen> {
                     ),
                   _Button(
                     title: 'SUBMIT',
-                    onTap: () {},
+                    onTap: () {
+                      _submit();
+                    },
                   ),
                   const SizedBox(height: 20.0),
                 ],
@@ -147,15 +193,13 @@ class _AddFeedScreenState extends State<AddFeedScreen> {
       _showSnackBar('Please attach a file');
     } else {
       if (widget.type != 'Text') {
-        /*for (var i = 0; i < _files.length; i++) {
-          _base64.insert(i, base64.encode(io.File(_files[i]).readAsBytesSync()));
-        }*/
+        _fp1
+            .map((e) => {
+                  _listOfMap.add({'res': e['base64']}),
+                })
+            .toList();
       }
-      _base64
-          .map((e) => {
-                _listOfMap.add({'res': e})
-              })
-          .toList();
+
       setState(() {
         isLoad = true;
       });
@@ -171,13 +215,15 @@ class _AddFeedScreenState extends State<AddFeedScreen> {
         'type': widget.type,
         'feed_time': DateTime.now().toString(),
       });
+      initializeFlutterFire();
+      await notification.add({'tittle': _title.text, 'body': _description.text, 'to' : widget.categoryId});
       setState(() {
         isLoad = false;
       });
       print(response.body.toString());
 
       if (response.body.toString() == 'yes') {
-        //add something
+        _showSnackBar('Uploaded successfully');
       } else {
         _showSnackBar('Something went wrong... Please try again');
       }

@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         accentColor: ColorPalette.accentColor,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: SelectCategoryScreen(),
+      home: LoginScreen(),
       routes: {
         LoginScreen.routeName: (context) => LoginScreen(),
         SplashScreen.routeName: (context) => SplashScreen(),
